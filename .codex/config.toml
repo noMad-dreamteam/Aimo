@@ -1,2 +1,109 @@
+# Least privilege for new standalone Codex sessions. Managed session settings take precedence.
+approval_policy = "on-request"
+approvals_reviewer = "user"
+default_permissions = "aimo-review"
+
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false
+[shell_environment_policy.set]
+PATH = "/usr/bin:/bin:/usr/sbin:/sbin:/Applications/ChatGPT.app/Contents/Resources/cua_node/bin"
+GIT_CONFIG_GLOBAL = "/dev/null"
+GIT_CONFIG_SYSTEM = "/dev/null"
+
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
+
+[agents]
+max_concurrent_threads_per_session = 3
+
+# Inherited by role profiles; not an ACL for subagents in a broader parent session.
+[permissions.aimo-review]
+extends = ":read-only"
+[permissions.aimo-review.filesystem]
+":root" = "deny"
+":minimal" = "read"
+# Read-only access to the bundled Node used by this project's checks.
+"/Applications/ChatGPT.app/Contents/Resources/cua_node" = "read"
+"/System/Library/OpenSSL/openssl.cnf" = "read"
+"/Library/Developer/CommandLineTools" = "read"
+":tmpdir" = "write"
+":slash_tmp" = "write"
+glob_scan_max_depth = 8
+[permissions.aimo-review.filesystem.":workspace_roots"]
+"." = "read"
+"**/.env" = "deny"
+"**/.env.*" = "deny"
+"**/*.pem" = "deny"
+"**/*.key" = "deny"
+".aws" = "deny"
+[permissions.aimo-review.network]
+enabled = false
+
+[permissions.aimo-frontend]
+extends = "aimo-review"
+[permissions.aimo-frontend.filesystem.":workspace_roots"]
+"index.html" = "write"
+"src/styles.css" = "write"
+"src/app/ui.js" = "write"
+"src/app/chat.js" = "write"
+"tests/app" = "write"
+".git" = "read"
+".codex" = "read"
+".agents" = "read"
+".github" = "read"
+"AGENTS.md" = "read"
+
+[permissions.aimo-vision]
+extends = "aimo-review"
+[permissions.aimo-vision.filesystem.":workspace_roots"]
+"src/coach" = "write"
+"src/skills" = "write"
+"tests/coach" = "write"
+".git" = "read"
+".codex" = "read"
+".agents" = "read"
+".github" = "read"
+"AGENTS.md" = "read"
+
+[permissions.aimo-coach-llm]
+extends = "aimo-review"
+[permissions.aimo-coach-llm.filesystem.":workspace_roots"]
+"src/ai" = "write"
+"tests/ai" = "write"
+".git" = "read"
+".codex" = "read"
+".agents" = "read"
+".github" = "read"
+"AGENTS.md" = "read"
+
+[permissions.aimo-qa]
+extends = "aimo-review"
+[permissions.aimo-qa.filesystem.":workspace_roots"]
+"docs" = "write"
+"tests" = "write"
+".git" = "read"
+".codex" = "read"
+".agents" = "read"
+".github" = "read"
+"AGENTS.md" = "read"
+
+[permissions.aimo-feature]
+extends = "aimo-review"
+[permissions.aimo-feature.filesystem.":workspace_roots"]
+"docs/FEATURE_ROADMAP.md" = "write"
+".git" = "read"
+".codex" = "read"
+".agents" = "read"
+".github" = "read"
+"AGENTS.md" = "read"
+
+[permissions.aimo-root]
+extends = "aimo-review"
+[permissions.aimo-root.filesystem.":workspace_roots"]
+"." = "write"
+".git" = "write"
+".codex" = "read"
+".agents" = "read"
+".github" = "write"
+"AGENTS.md" = "read"

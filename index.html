@@ -10,10 +10,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Aimo</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="./app-icon-32.png?v=4">
-  <link rel="apple-touch-icon" sizes="180x180" href="./app-icon-180.png?v=4">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/app-icon-32.png?v=4">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/app-icon-180.png?v=4">
   <link rel="manifest" href="./manifest.webmanifest?v=4">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -60,7 +60,7 @@
 
   <section class="screen screen-login" data-screen="login" aria-label="Вход">
     <form id="loginForm" class="login-card" autocomplete="off" novalidate>
-      <img class="logo-mark" src="./app-icon-192.png?v=4" width="64" height="64" alt="">
+      <img class="logo-mark" src="./assets/icons/app-icon-192.png?v=4" width="64" height="64" alt="">
       <h1 class="logo">aimo</h1>
       <p class="login-tagline">Нейро-тренер в прямом эфире</p>
       <label class="field"><span>Как тебя зовут?</span><input id="loginName" maxlength="24" placeholder="Имя" required autocomplete="given-name"></label>
@@ -74,7 +74,7 @@
     <div class="drawer-head"><h2>Чаты</h2><button id="closeDrawer" class="icon-btn" aria-label="Закрыть"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <button id="drawerNew" class="drawer-new"><svg class="ic"><use href="#i-edit"/></svg> Новый чат</button>
     <div id="drawerList" class="drawer-list"></div>
-    <button id="drawerClear" class="text-btn danger">Удалить все чаты</button>
+    <button id="drawerClear" class="btn-ghost danger drawer-clear" type="button">Удалить все чаты</button>
   </aside>
 
   <header class="app-toolbar" aria-label="Быстрые действия">
@@ -92,22 +92,11 @@
       <div><strong>Тренер на твоём устройстве</strong><p id="setupReminderText"></p><button id="openSetup" class="setup-link" type="button">Подготовить</button></div>
       <button id="dismissSetup" class="icon-btn" type="button" aria-label="Скрыть напоминание"><svg class="ic"><use href="#i-x"/></svg></button>
     </aside>
-    <div class="chat-wrap"><div id="chatList" class="chat-list"></div><button id="chatJump" class="jump-btn" type="button" aria-label="К последним сообщениям" hidden><svg class="ic"><use href="#i-down"/></svg></button></div>
-    <div id="chatTyping" class="typing" hidden><span></span><span></span><span></span></div>
-    <div id="chatChips" class="chips"></div>
-    <form id="chatForm" class="composer">
-      <input id="chatInput" maxlength="200" placeholder="Напиши тренеру…" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" aria-label="Сообщение тренеру">
-      <button id="chatSend" type="submit" class="send-btn" aria-label="Отправить"><svg class="ic"><use href="#i-send"/></svg></button>
-    </form>
+    <div class="chat-wrap"><div id="chatList" class="chat-list"><div id="chatTyping" class="typing" aria-label="Тренер пишет" role="status" hidden><span></span><span></span><span></span></div></div></div>
   </section>
 
   <section class="screen screen-catalog" data-screen="catalog" aria-label="Навыки">
     <div id="catalogGrid" class="catalog"></div>
-  </section>
-
-  <section class="screen screen-live" data-screen="live" aria-label="Выбор навыка для эфира">
-    <header class="topbar"><div class="topbar-title"><div><strong>Эфир</strong><small>Выбери навык — тренер проведёт по шагам</small></div></div></header>
-    <div id="liveSkillGrid" class="catalog"></div>
   </section>
 
   <section class="screen screen-progress" data-screen="progress" aria-label="Прогресс">
@@ -133,17 +122,22 @@
         <div id="personalityRow" class="segmented" role="radiogroup" aria-label="Характер тренера"></div>
         <small id="personalityNote" class="segmented-note"></small>
       </div>
-      <label class="row"><span><strong>Голос тренера</strong><small>Озвучивать подсказки</small></span><input id="voiceInput" type="checkbox" class="switch"></label>
-      <label class="row voice-choice"><span><strong>Голос</strong><small id="voiceHint">Голоса браузера и скачиваемые</small></span><select id="coachVoiceSelect" aria-label="Голос тренера"></select></label>
-      <label class="row stacked voice-setting"><span><strong>Громкость речи</strong> <output id="voiceVolumeValue" for="voiceVolumeInput">100%</output></span><input id="voiceVolumeInput" type="range" min="0" max="100" step="5" value="100"></label>
-      <label class="row stacked voice-setting"><span><strong>Скорость речи</strong> <output id="voiceRateValue" for="voiceRateInput">0,7×</output></span><input id="voiceRateInput" type="range" min="0.5" max="1.5" step="0.05" value="0.7"></label>
-      <div class="voice-actions">
-        <button id="previewCoachVoice" class="btn-ghost small" type="button">Прослушать</button>
-        <button id="downloadCoachVoice" class="btn-ghost small model-download" type="button" hidden>Скачать голос · 63 МБ</button>
-        <button id="cancelVoiceDownload" class="btn-ghost small" type="button" hidden>Отменить</button>
-      </div>
-      <progress id="voiceDownloadProgress" class="voice-progress" max="1" value="0" aria-label="Скачивание голоса" hidden></progress>
-      <p id="voiceDownloadStatus" class="model-note" role="status"></p>
+      <label class="row"><span><strong>Озвучивать подсказки</strong></span><input id="voiceInput" type="checkbox" class="switch" aria-controls="voicePicker voiceVolumeSetting voiceRateSetting"></label>
+      <details id="voicePicker" class="details voice-picker" hidden>
+        <summary class="row"><span><strong>Голос</strong><small id="voiceHint">Ирина, Руслан, Денис и Дмитрий · на устройстве</small></span><svg class="ic chevron" aria-hidden="true"><use href="#i-down"/></svg></summary>
+        <div class="llm-box">
+          <div id="localVoiceList" class="model-choice" role="radiogroup" aria-label="Голос тренера"></div>
+          <div class="system-voice">
+            <label><input type="radio" name="trainerVoice" value=""><span>Голос браузера</span></label>
+            <select id="coachVoiceSelect" aria-label="Голос браузера"></select>
+            <button id="previewCoachVoice" class="btn-ghost small" type="button">Прослушать голос браузера</button>
+          </div>
+          <p id="voiceDownloadStatus" class="model-status" role="status"></p>
+        </div>
+      </details>
+      <label id="voiceVolumeSetting" class="row stacked voice-setting" hidden><span><strong>Громкость речи</strong> <output id="voiceVolumeValue" for="voiceVolumeInput">100%</output></span><input id="voiceVolumeInput" type="range" min="0" max="100" step="5" value="100"></label>
+      <label id="voiceRateSetting" class="row stacked voice-setting" hidden><span><strong>Скорость речи</strong> <output id="voiceRateValue" for="voiceRateInput">1×</output></span><input id="voiceRateInput" type="range" min="0.5" max="1.5" step="0.05" value="0.7" aria-valuetext="1×"></label>
+
     </div>
 
     <h3 class="section-title">Эфир</h3>
@@ -156,12 +150,12 @@
     </div>
 
     <details id="modelSettings" class="group details">
-      <summary class="row"><span><strong>ИИ на устройстве</strong><small>Живой тренер: модель Qwen в браузере</small></span><svg class="ic chevron" aria-hidden="true"><use href="#i-down"/></svg></summary>
+      <summary class="row"><span><strong>Нейросеть</strong><small>Qwen · живой разговор с тренером</small></span><svg class="ic chevron" aria-hidden="true"><use href="#i-down"/></svg></summary>
       <div id="liveCoachBox" class="llm-box">
-        <p class="muted-note">Модель скачивается один раз и хранится в браузере. Нужны WebGPU и свободное место.</p>
+        <p class="muted-note">Размеры включают файлы модели и модуль запуска. Рекомендуемое место — с запасом 100 МБ для браузера.</p>
         <div class="model-choice" role="radiogroup" aria-label="Локальная модель тренера">
-          <div class="model-card" data-model="default"><label><input type="radio" name="llmModel" value="default" checked><span>Qwen 2.5 · 1.5B<small>Около 1 ГБ · подробнее отвечает</small></span></label><button type="button" class="btn-ghost small model-download" data-download-model="default" aria-label="Скачать Qwen 2.5 1.5B">Скачать</button><p id="modelStatus-default" class="model-status" role="status">Статус ещё не проверен</p><progress id="modelProgress-default" max="1" value="0" hidden aria-label="Загрузка Qwen 2.5 1.5B"></progress></div>
-          <div class="model-card" data-model="small"><label><input type="radio" name="llmModel" value="small"><span>Qwen 2.5 · 0.5B<small>Около 400 МБ · для слабых устройств</small></span></label><button type="button" class="btn-ghost small model-download" data-download-model="small" aria-label="Скачать Qwen 2.5 0.5B">Скачать</button><p id="modelStatus-small" class="model-status" role="status">Статус ещё не проверен</p><progress id="modelProgress-small" max="1" value="0" hidden aria-label="Загрузка Qwen 2.5 0.5B"></progress></div>
+          <div class="model-card" data-model="default"><label><input type="radio" name="llmModel" value="default" checked><span>Qwen 2.5 · 1.5B<small id="modelSize-default">881,74 МБ · подробнее отвечает</small></span></label><div class="model-actions"><button type="button" class="btn-ghost small model-download" data-download-model="default" aria-label="Скачать Qwen 2.5 1.5B">Скачать</button><button type="button" class="btn-ghost small danger" data-delete-model="default" aria-label="Удалить Qwen 2.5 1.5B с устройства" disabled>Удалить нейросеть</button></div><p id="modelSpace-default" class="model-space">Рекомендуем освободить 982 МБ</p><p id="modelStatus-default" class="model-status" role="status">Статус ещё не проверен</p><progress id="modelProgress-default" max="1" value="0" hidden aria-label="Загрузка Qwen 2.5 1.5B"></progress></div>
+          <div class="model-card" data-model="small"><label><input type="radio" name="llmModel" value="small"><span>Qwen 2.5 · 0.5B<small id="modelSize-small">290,68 МБ · для слабых устройств</small></span></label><div class="model-actions"><button type="button" class="btn-ghost small model-download" data-download-model="small" aria-label="Скачать Qwen 2.5 0.5B">Скачать</button><button type="button" class="btn-ghost small danger" data-delete-model="small" aria-label="Удалить Qwen 2.5 0.5B с устройства" disabled>Удалить нейросеть</button></div><p id="modelSpace-small" class="model-space">Рекомендуем освободить 391 МБ</p><p id="modelStatus-small" class="model-status" role="status">Статус ещё не проверен</p><progress id="modelProgress-small" max="1" value="0" hidden aria-label="Загрузка Qwen 2.5 0.5B"></progress></div>
         </div>
         <button id="cancelModelDownload" type="button" class="text-btn" hidden>Отменить скачивание</button>
         <p id="liveCoachStatus" class="model-status" role="status">Скачивание и использование модели включаются отдельно.</p>
@@ -174,17 +168,29 @@
     </div>
 
     <p class="muted-note center"><svg class="ic"><use href="#i-lock"/></svg> Профиль и история хранятся на устройстве. Видео не отправляется.</p>
-    <button id="clearHistory" class="btn-ghost danger wide" type="button">Удалить прогресс</button>
-    <button id="logoutBtn" class="btn-ghost danger wide" type="button">Выйти из профиля</button>
+    <div class="profile-actions" role="group" aria-label="Действия с профилем">
+      <button id="clearHistory" class="btn-ghost danger wide" type="button">Удалить прогресс</button>
+      <button id="logoutBtn" class="btn-ghost danger wide" type="button">Выйти из профиля</button>
+    </div>
   </section>
 
-  <nav class="tabbar" aria-label="Разделы">
-    <button class="tab" data-tab="chat" aria-label="Чат" aria-current="page"><svg class="ic"><use href="#i-chats"/></svg><span class="tab-label">Чат</span></button>
-    <button class="tab" data-tab="catalog" aria-label="Навыки"><svg class="ic"><use href="#i-grid"/></svg><span class="tab-label">Навыки</span></button>
-    <button class="tab tab-live" data-tab="live" aria-label="Эфир: выбрать навык"><span class="tab-fab"><svg class="ic"><use href="#i-add"/></svg></span><span class="tab-label">Эфир</span></button>
-    <button class="tab" data-tab="progress" aria-label="Прогресс"><svg class="ic"><use href="#i-chart"/></svg><span class="tab-label">Прогресс</span></button>
-    <button class="tab tab-profile" data-tab="profile" aria-label="Профиль"><span id="tabAvatar" class="avatar tiny"></span><span class="tab-label">Профиль</span></button>
-  </nav>
+  <div id="bottomControls" class="bottom-controls">
+    <div class="chat-controls">
+      <button id="chatJump" class="jump-btn" type="button" aria-label="К последним сообщениям" hidden><svg class="ic"><use href="#i-down"/></svg></button>
+      <div id="chatChips" class="chips"></div>
+      <form id="chatForm" class="composer">
+        <input id="chatInput" maxlength="200" placeholder="Напиши тренеру…" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" aria-label="Сообщение тренеру">
+        <button id="chatSend" type="submit" class="send-btn" aria-label="Отправить"><svg class="ic"><use href="#i-send"/></svg></button>
+      </form>
+    </div>
+    <nav class="tabbar" aria-label="Разделы">
+      <button class="tab" data-tab="chat" aria-label="Чат" aria-current="page"><svg class="ic"><use href="#i-chats"/></svg><span class="tab-label">Чат</span></button>
+      <button class="tab" data-tab="catalog" aria-label="Навыки"><svg class="ic"><use href="#i-grid"/></svg><span class="tab-label">Навыки</span></button>
+      <button class="tab tab-live" data-tab="live" aria-label="Эфир: выбрать навык"><span class="tab-fab"><svg class="ic"><use href="#i-add"/></svg></span><span class="tab-label">Эфир</span></button>
+      <button class="tab" data-tab="progress" aria-label="Прогресс"><svg class="ic"><use href="#i-chart"/></svg><span class="tab-label">Прогресс</span></button>
+      <button class="tab tab-profile" data-tab="profile" aria-label="Профиль"><span id="tabAvatar" class="avatar tiny"></span><span class="tab-label">Профиль</span></button>
+    </nav>
+  </div>
 
   <div class="sheet-backdrop" data-sheet-backdrop hidden></div>
   <div id="sheetSetup" class="sheet" role="dialog" aria-modal="true" aria-labelledby="setupTitle" hidden>
@@ -192,13 +198,14 @@
     <div class="sheet-head"><div><h2 id="setupTitle">Подготовь тренера</h2><small>Один раз, лучше по Wi-Fi</small></div><button id="closeSetup" class="icon-btn" type="button" aria-label="Закрыть"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <p class="sheet-text">Скачай голос Дмитрия для озвучивания и Qwen для живого разговора. Всё работает на твоём устройстве.</p>
     <div class="setup-option"><span><strong>Голос Дмитрия</strong><small>63 МБ · мягкий мужской голос</small></span><button id="setupVoice" class="btn-ghost small" type="button">К голосу</button></div>
-    <div id="setupModelRow" class="setup-option"><span><strong>Модель Qwen</strong><small>1 ГБ или 400 МБ на выбор</small></span><button id="setupModel" class="btn-ghost small" type="button">К Qwen</button></div>
+    <div id="setupModelRow" class="setup-option"><span><strong>Модель Qwen</strong><small>881,74 МБ или 290,68 МБ на выбор</small></span><button id="setupModel" class="btn-ghost small" type="button">К Qwen</button></div>
     <p class="sheet-text setup-footnote">Можно продолжить и скачать позже в профиле. Пока доступны подсказки тренера и системный голос.</p>
   </div>
   <div id="sheetSkill" class="sheet" role="dialog" aria-modal="true" aria-labelledby="skillSheetName" hidden>
     <div class="sheet-grab"></div>
     <div class="sheet-head"><span id="skillSheetEmoji" class="skill-emoji"></span><div><h2 id="skillSheetName"></h2><small id="skillSheetMeta"></small></div></div>
     <p id="skillSheetDesc" class="sheet-text"></p>
+    <a id="skillSheetReference" class="skill-reference" target="_blank" rel="noopener noreferrer" hidden>Посмотреть исходный танец ↗</a>
     <ol id="skillSheetSteps" class="steps"></ol>
     <p class="camera-hint"><svg class="ic"><use href="#i-camera"/></svg><span id="skillSheetCamera"></span></p>
     <div class="sheet-actions">
@@ -240,6 +247,7 @@
         <button id="liveMore" class="glass-btn" type="button" aria-label="Настройки эфира" aria-expanded="false" aria-controls="liveMenu"><svg class="ic"><use href="#i-more"/></svg></button>
       </header>
       <div id="skillPlate" class="skill-plate" hidden>
+        <p id="skillPlateWelcome" class="skill-plate-welcome">Привет! Выбери навык, затем нажми «Начать эфир». Не торопись — начнём, когда будешь готов.</p>
         <p class="skill-plate-title">Что тренируем?</p>
         <div id="skillPlateList" class="skill-plate-list" role="radiogroup" aria-label="Навык для эфира"></div>
         <button id="skillPlateGo" class="btn-primary" type="button"><svg class="ic"><use href="#i-camera"/></svg> <span id="skillPlateLabel">Начать эфир</span></button>
@@ -281,7 +289,7 @@
       </section>
 
       <div class="far-overlay" id="farOverlay" aria-hidden="true"><p class="far-step" id="farStep"></p><p class="far-text" id="farText"></p></div>
-      <div class="loading-cover" id="loadingCover" hidden><div class="orbit"></div><h3>Готовим тренера</h3><p id="loadingText">Загружаем модели позы и предметов…</p></div>
+      <div class="loading-cover" id="loadingCover" hidden><div class="orbit"></div><h3>Готовим тренера</h3><p id="loadingText">Загружаем модели позы и предметов…</p><button id="liveLoadingCancel" class="btn-ghost light" type="button">Отменить</button></div>
       <div class="live-error" id="liveError" hidden>
         <h3>Эфир не запустился</h3>
         <p id="liveErrorText"></p>
@@ -293,6 +301,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </div>
-<script type="module" src="./app/main.js"></script>
+<script type="module" src="./src/app/main.js"></script>
 </body>
 </html>

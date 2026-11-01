@@ -1,0 +1,147 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { initials, sanitizeProfile, greeting, sanitizePrefs, sanitizeHistory, loadPrefs, savePrefs, KEYS, streakDays, historyStats, createThread, freshThread, appendMessage, threadTitle, isFresh, replaceThread, sanitizeChats, AVATAR_HUES } from '../../src/app/store.js';
+import { getSkill } from '../../src/skills/index.js';
+
+test('existing installations switch to Dmitri once, then preserve voice and speed edits', () => {
+  const original = globalThis.localStorage;
+  const data = new Map([[KEYS.prefs, JSON.stringify({ voiceDefaultsVersion: 1, voiceId: 'piper:ru_RU-ruslan-medium', voiceRate: 1.2, voiceVolume: .7 })]]);
+  globalThis.localStorage = { getItem: key => data.get(key), setItem: (key, value) => data.set(key, value) };
+  try {
+    const prefs = loadPrefs();
+    assert.equal(prefs.voiceId, 'piper:ru_RU-dmitri-medium');
+    assert.equal(prefs.voiceRate, .7);
+    assert.equal(prefs.voiceVolume, .7);
+    savePrefs({ ...prefs, voiceId: 'piper:ru_RU-denis-medium', voiceRate: 1.1 });
+    assert.equal(loadPrefs().voiceId, 'piper:ru_RU-denis-medium');
+    assert.equal(loadPrefs().voiceRate, 1.1);
+  } finally {
+    if (original === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = original;
+  }
+});
+
+test('object-detector preference migrates the old ball switch and saved voice is sanitized', () => {
+  assert.equal(sanitizePrefs({ ball: false }).objects, false);
+  assert.equal(sanitizePrefs({ ball: false, objects: true }).objects, true);
+  assert.equal(sanitizePrefs({ voiceId: 'voice-uri' }).voiceId, 'voice-uri');
+  assert.equal(sanitizePrefs({ voiceId: {} }).voiceId, '');
+  assert.equal('ball' in sanitizePrefs({ ball: true }), false);
+});
+
+test('speech settings preserve values and bound invalid stored preferences', () => {
+  assert.equal(sanitizePrefs({ voiceVolume: 0, voiceRate: 1.25 }).voiceVolume, 0);
+  assert.equal(sanitizePrefs({ voiceRate: 1.25 }).voiceRate, 1.25);
+  assert.equal(sanitizePrefs({ voiceVolume: 5, voiceRate: -1 }).voiceVolume, 1);
+  assert.equal(sanitizePrefs({ voiceRate: -1 }).voiceRate, .5);
+  assert.equal(sanitizePrefs({ voiceRate: NaN }).voiceRate, .7);
+  assert.equal(sanitizePrefs({}).voiceId, 'piper:ru_RU-dmitri-medium');
+  assert.equal(sanitizePrefs({}).voiceRate, .7);
+});
+test('profile is sanitized: trimmed name, known hue, no empty names', () => {
+  assert.equal(sanitizeProfile({ name: '  Тест  ', hue: 999 }).name, 'Тест');
+  assert.equal(sanitizeProfile({ name: 'Тест', hue: 999 }).hue, AVATAR_HUES[0]);
+  assert.equal(sanitizeProfile({ name: '   ' }), null);
+  assert.equal(sanitizeProfile(null), null);
+  assert.equal(initials('Тест Пользователь'), 'ТП');
+  assert.equal(initials(''), '?');
+});
+
+test('greeting follows the hour', () => {
+  assert.equal(greeting('Тест', 8), 'Доброе утро, Тест!');
+  assert.equal(greeting('Тест', 15), 'Добрый день, Тест!');
+  assert.equal(greeting('Тест', 22), 'Добрый вечер, Тест!');
+  assert.equal(greeting('Тест', 2), 'Доброй ночи, Тест!');
+});
+
+test('preferences fall back to safe defaults', () => {
+  const p = sanitizePrefs({ skill: 'nope', personality: 'angry', llmModel: 'giant', plan: ['football', 'x', 'balance', 'squats', 'football'], theme: 'neon', voice: 'yes' });
+  assert.equal(p.skill, 'football'); assert.equal(p.personality, 'calm'); assert.equal(p.llmModel, 'default');
+  assert.deepEqual(p.plan, ['football', 'balance', 'squats']); assert.equal(p.theme, 'system'); assert.equal(p.voice, true);
+  assert.equal(p.facing, 'user', 'front camera by default: the athlete must see the screen');
+  assert.equal(sanitizePrefs({ facing: 'environment' }).facing, 'environment');
+  assert.equal(sanitizePrefs({ facing: 'sideways' }).facing, 'user');
+  assert.equal(p.fit, 'contain', 'the whole camera frame by default, nothing cropped');
+  assert.equal(sanitizePrefs({ fit: 'zoom' }).fit, 'contain');
+  assert.equal(sanitizePrefs({}).wide, true, 'widest lens by default');
+  assert.equal(sanitizePrefs({ wide: false }).wide, false);
+});
+
+test('day streak counts consecutive training days back from today or yesterday', () => {
+  const day = (offset) => { const d = new Date(2026, 9, 25, 12); d.setDate(d.getDate() - offset); return d.toISOString(); };
+  const today = new Date(2026, 9, 25, 20);
+  assert.equal(streakDays([], today), 0);
+  assert.equal(streakDays([{ date: day(0) }], today), 1);
+  assert.equal(streakDays([{ date: day(1) }, { date: day(2) }], today), 2, 'yesterday counts when today has no training yet');
+  assert.equal(streakDays([{ date: day(0) }, { date: day(1) }, { date: day(3) }], today), 2, 'a gap breaks the streak');
+  const stats = historyStats([{ date: day(0), seconds: 90, bestStreak: 4, skill: 'football' }, { date: day(1), seconds: 30, bestStreak: 7, skill: 'squats' }]);
+  assert.equal(stats.trainings, 2); assert.equal(stats.minutes, 2); assert.equal(stats.bestStreak, 7);
+});
+
+test('opening the app reuses an untouched chat instead of creating a new one', () => {
+  const first = freshThread([], 'Привет!', { now: '2026-10-25T10:00:00Z' });
+  assert.equal(first.chats.length, 1);
+  assert.equal(first.thread.messages[0].text, 'Привет!');
+  assert.equal(isFresh(first.thread), true);
+  const second = freshThread(first.chats, 'Добрый день!');
+  assert.equal(second.chats.length, 1, 'no second empty chat');
+  assert.equal(second.thread.id, first.thread.id);
+  assert.equal(second.thread.messages[0].text, 'Добрый день!', 'greeting refreshed');
+  const later = freshThread(second.chats, 'Доброе утро!', { now: '2026-10-26T08:00:00Z' });
+  assert.equal(later.thread.messages[0].at, '2026-10-26T08:00:00Z', 'greeting time refreshed, no stale day separator');
+  assert.equal(later.thread.updatedAt, '2026-10-26T08:00:00Z');
+  const { thread: used } = appendMessage(second.thread, { role: 'user', text: 'хочу чеканить' });
+  const third = freshThread(replaceThread(second.chats, used), 'Привет!');
+  assert.equal(third.chats.length, 2, 'a used chat stays and a new one is opened');
+  assert.notEqual(third.thread.id, used.id);
+});
+
+test('messages set the chat title and summaries name the thread', () => {
+  const t = createThread('Привет', { now: '2026-10-25T10:00:00Z' });
+  assert.equal(threadTitle(t), 'Новый чат');
+  const { thread: a } = appendMessage(t, { role: 'user', text: 'Хочу научиться чеканить мяч, но он всё время падает и улетает' });
+  assert.equal(a.title.length, 48);
+  const { thread: b } = appendMessage(createThread('Привет'), { role: 'coach', type: 'summary', text: 'итог', data: { skillName: 'Чеканка мяча' } });
+  assert.equal(threadTitle(b), 'Эфир · Чеканка мяча');
+  assert.equal(isFresh(b), false);
+});
+
+test('renamed TikTok skill retains its saved ID and old summaries use the current name', () => {
+  assert.equal(getSkill('zolo').name, 'Танцы Тикток');
+  assert.equal(sanitizePrefs({ skill: 'zolo', plan: ['zolo'] }).skill, 'zolo');
+  const { thread } = appendMessage(createThread('Привет'), { role: 'coach', type: 'summary', data: { skillId: 'zolo', skillName: 'Танцы Ивана Золо' } });
+  assert.equal(threadTitle(thread), 'Эфир · Танцы Тикток');
+});
+
+test('stored chats are validated and ordered by last activity', () => {
+  const chats = sanitizeChats([{ id: 'a', createdAt: '1', messages: [{ role: 'user', text: 'x' }] }, { id: 'b' }, 'junk']);
+  assert.equal(chats.length, 1);
+  const older = { id: 'o', createdAt: '2026-01-01', updatedAt: '2026-01-01', title: '', skill: null, messages: [] };
+  const newer = { id: 'n', createdAt: '2026-02-01', updatedAt: '2026-02-01', title: '', skill: null, messages: [] };
+  assert.deepEqual(replaceThread([newer, older], { ...older, updatedAt: '2026-03-01' }).map(t => t.id), ['o', 'n']);
+});
+
+test('inherited object keys cannot select a skill, personality or model', () => {
+  for (const key of ['constructor', '__proto__', 'toString']) {
+    assert.equal(getSkill(key).id, 'football');
+    const prefs = sanitizePrefs({ personality: key, llmModel: key });
+    assert.equal(prefs.personality, 'calm'); assert.equal(prefs.llmModel, 'default');
+  }
+});
+
+test('corrupt history cannot poison totals and simulated sessions stay out of history', () => {
+  const record = { skill: 'football', seconds: 60, date: '2026-10-30T12:00:00Z', metricValue: -4, bestStreak: 'bad' };
+  const history = sanitizeHistory([record, { ...record, seconds: -5 }, { ...record, seconds: Infinity }, { ...record, date: 'bad' }, { ...record, source: 'demo' }]);
+  assert.equal(history.length, 1); assert.equal(history[0].metricValue, 0); assert.equal(history[0].bestStreak, 0);
+  assert.equal(historyStats(history).minutes, 1); assert.equal(record.metricValue, -4, 'input is unchanged');
+});
+
+test('malformed saved cards are discarded or repaired before rendering', () => {
+  const [chat] = sanitizeChats([{ id: 'a', messages: [
+    { role: 'coach', type: 'route', data: { plan: 'football', goal: 123 } },
+    { role: 'coach', type: 'route' }, { role: 'coach', type: 'unknown', text: 'x' },
+    { role: 'coach', text: 'legacy text' }, { role: 'invalid', text: 'x' }, null,
+  ] }]);
+  assert.equal(chat.messages.length, 2); assert.deepEqual(chat.messages[0].data, { plan: [], goal: '' });
+  assert.equal(chat.messages[1].type, 'text');
+});

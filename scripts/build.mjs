@@ -1,18 +1,20 @@
-// Copies the buildless app into dist/ for static hosting (GitHub Pages).
-import { mkdir, cp, copyFile, readFile, rm, writeFile } from 'node:fs/promises';
+// Package only runtime files; tests, archives and agent instructions stay in the repo.
+import { mkdir, copyFile, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { projectRoot, runtimeFiles } from './runtime-files.mjs';
 
-const root = process.cwd();
+const root = projectRoot;
 const dist = path.join(root, 'dist');
-const files = ['index.html', 'styles.css', 'app-icon-32.png', 'app-icon-180.png', 'app-icon-192.png', 'app-icon-512.png', 'manifest.webmanifest', 'coach-engine.js', 'coach-motion.js', 'coach-policy.js', 'coach-llm.js', 'coach-planner.js', 'coach-talk.js', 'coach-progress.js', 'coach-objects.js', 'coach-questions.js', 'coach-chat.js', 'rhythm.js', 'llm-worker.js', 'sw.js'];
-const dirs = ['app', 'skills'];
+const files = await runtimeFiles();
 
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
-for (const file of files) await copyFile(path.join(root, file), path.join(dist, file));
-for (const dir of dirs) await cp(path.join(root, dir), path.join(dist, dir), { recursive: true });
+for (const file of files) {
+  await mkdir(path.dirname(path.join(dist, file)), { recursive: true });
+  await copyFile(path.join(root, file), path.join(dist, file));
+}
 await writeFile(path.join(dist, '.nojekyll'), '');
 
 const html = await readFile(path.join(dist, 'index.html'), 'utf8');
-if (!html.includes('cameraVideo') || !html.includes('app/main.js')) throw new Error('Missing app entry points');
-console.log(`Built dist/: ${files.join(', ')} + ${dirs.map(d => d + '/').join(', ')}`);
+if (!html.includes('cameraVideo') || !html.includes('src/app/main.js')) throw new Error('Missing app entry points');
+console.log(`Built dist/: ${files.length} runtime files (src/, assets/, HTML, manifest, service worker)`);

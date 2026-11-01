@@ -1,10 +1,12 @@
 // Validate the static package without downloading models or starting the camera.
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { runtimeFiles } from './runtime-files.mjs';
 
 const root = path.resolve(process.argv[2] || 'dist');
 const errors = [];
 let checked = 0;
+const expectedFiles = new Set([...(await runtimeFiles()), '.nojekyll']);
 async function reference(from, value) {
   if (!value || /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(value)) return;
   if (value.startsWith('/')) { errors.push(`${from}: root-relative URL breaks project Pages hosting: ${value}`); return; }
@@ -17,6 +19,7 @@ async function walk(dir = '') {
   for (const entry of await readdir(path.join(root, dir), { withFileTypes: true })) {
     const file = path.join(dir, entry.name);
     if (entry.isDirectory()) { await walk(file); continue; }
+    if (!expectedFiles.has(file.split(path.sep).join('/'))) errors.push(`${file}: non-runtime file in public package`);
     if (!/\.(js|html|css)$/.test(file)) continue;
     const text = await readFile(path.join(root, file), 'utf8');
     // Literal module imports, re-exports and worker URLs used by this buildless app.
@@ -38,6 +41,10 @@ const worker = await readFile(path.join(root, 'sw.js'), 'utf8');
 const shell = worker.match(/const SHELL\s*=\s*\[([\s\S]*?)\];/);
 if (!shell) errors.push('sw.js: SHELL cache list not found');
 else for (const match of shell[1].matchAll(/['"]([^'"]+)['"]/g)) await reference('sw.js', match[1]);
+if (shell) {
+  const cached = new Set([...shell[1].matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1].replace(/^\.\//, '')));
+  for (const file of expectedFiles) if (file.endsWith('.js') && file !== 'sw.js' && !cached.has(file)) errors.push(`sw.js: runtime module missing from offline shell: ${file}`);
+}
 const manifest = JSON.parse(await readFile(path.join(root, 'manifest.webmanifest'), 'utf8'));
 for (const icon of manifest.icons || []) await reference('manifest.webmanifest', icon.src);
 await reference('manifest.webmanifest', manifest.start_url);
