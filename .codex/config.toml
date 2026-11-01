@@ -1,7 +1,7 @@
 # Least privilege for new standalone Codex sessions. Managed session settings take precedence.
 approval_policy = "on-request"
 approvals_reviewer = "user"
-default_permissions = "aimo-review"
+default_permissions = "aimo-root"
 
 [shell_environment_policy]
 inherit = "core"
@@ -100,10 +100,12 @@ extends = "aimo-review"
 
 [permissions.aimo-root]
 extends = "aimo-review"
+[permissions.aimo-root.network]
+enabled = true
 [permissions.aimo-root.filesystem.":workspace_roots"]
 "." = "write"
 ".git" = "write"
-".codex" = "read"
-".agents" = "read"
+".codex" = "write"
+".agents" = "write"
 ".github" = "write"
-"AGENTS.md" = "read"
+"AGENTS.md" = "write"
