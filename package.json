@@ -6,9 +6,16 @@
   "scripts": {
     "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
     "test": "node --test",
+    "test:app": "node --test tests/app/*.test.mjs",
+    "test:coach": "node --test tests/coach/*.test.mjs",
+    "test:ai": "node --test tests/ai/*.test.mjs",
+    "test:offline": "node --test tests/offline/*.test.mjs",
+    "test:security": "node --test tests/ai/safety.test.mjs tests/ai/client-boundary.test.mjs tests/app/action-policy.test.mjs tests/app/tts-worker.test.mjs",
     "build": "node scripts/build.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:site": "node scripts/check-site.mjs",
+    "check:browser": "node scripts/check-browser.mjs",
+    "check:permissions": "node scripts/check-agent-permissions.mjs",
     "check": "npm run check:syntax && npm test && npm run build && npm run check:site"
   }
 }

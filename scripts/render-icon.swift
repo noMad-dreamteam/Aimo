@@ -1,8 +1,8 @@
 // Run with `swift scripts/render-icon.swift` on macOS to refresh the PNG icons.
 import AppKit
 
-guard let image = NSImage(contentsOfFile: "app-icon.png") else {
-    fatalError("Missing app-icon.png")
+guard let image = NSImage(contentsOfFile: "assets/icons/app-icon.png") else {
+    fatalError("Missing assets/icons/app-icon.png")
 }
 
 for size in [32, 180, 192, 512] {
@@ -23,7 +23,7 @@ for size in [32, 180, 192, 512] {
                from: .zero, operation: .copy, fraction: 1)
     NSGraphicsContext.restoreGraphicsState()
 
-    let name = "app-icon-\(size).png"
+    let name = "assets/icons/app-icon-\(size).png"
     guard let data = bitmap.representation(using: .png, properties: [:]) else {
         fatalError("Could not encode \(name)")
     }
